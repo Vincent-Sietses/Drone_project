@@ -5,3 +5,9 @@ Personal project to improve my Python and ML skills.
 Goal : Create genetic algorithm to teach drone's to maneuver their 4 fixed thrusters.
 
 Will involve teaching myself Tkinter and learn how to use Python's file management. 
+
+
+
+Main Source : 
+
+<http://www.cs.us.es/~fsancho/ficheros/IA2019/TheContinuousGeneticAlgorithm.pdf>

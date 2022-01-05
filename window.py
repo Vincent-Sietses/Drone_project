@@ -21,6 +21,10 @@ def construct_window() -> tk.Tk:
 
 
 def draw_drone(drone, canvas) -> None:
+    """
+    Function that draws the tkinter polygons making up the drones. 
+    TO DO : draw at the origin then offset all the polygons (since rotation is done at the origin anyways)
+    """
     pos_x, pos_y = WIDTH * drone.position[0], HEIGHT * drone.position[1]
 
     size = drone.size
@@ -180,28 +184,43 @@ def update_drone(drone: Drone, canvas: tk.Canvas, delta: float):
 
     # if the angle is non-zero, rotate all the points around the center of the drone
     a = drone.angle
-    if a:
-        R = np.array(
-            [[np.cos(a), -np.sin(a)], [np.sin(a), np.cos(a)]]
-        )  # rotation matrix
-        o = np.atleast_2d([pos_x, pos_y])  # drone center
 
-        for tag in canvas.find_all():  # loop over all polygons
-            newxy = []
-            point_list = canvas.coords(tag)  # get polygon points
-            for i in range(
-                0, len(point_list), 2
-            ):  # for every pair, apply the rotation matrix
+    R = np.array([[np.cos(a), -np.sin(a)], [np.sin(a), np.cos(a)]])  # rotation matrix
+    o = np.atleast_2d([pos_x, pos_y])  # drone center
 
-                p = np.atleast_2d(point_list[i : i + 2])
-                # move point to origin, apply the rotation, move it back and append it to the new coordinate list
-                newxy += [c for c in np.squeeze((R @ (p.T - o.T) + o.T).T)]
-            canvas.coords(tag, newxy)
+    for tag in canvas.find_all():  # loop over all polygons
 
+        newxy = []
+        point_list = canvas.coords(tag)  # get polygon points
+        for i in range(
+            0, len(point_list), 2
+        ):  # for every pair, apply the rotation matrix
+
+            p = np.atleast_2d(point_list[i : i + 2])
+            # move point to origin, apply the rotation, move it back and append it to the new coordinate list
+            newxy += [c for c in np.squeeze((R @ (p.T - o.T) + o.T).T)]
+        canvas.coords(tag, newxy)
+
+    canvas.create_polygon(  # draw the target
+        [
+            WIDTH * (drone.target[0] - 0.01),
+            HEIGHT * (drone.target[1]),
+            WIDTH * (drone.target[0]),
+            HEIGHT * (drone.target[1] - 0.01),
+            WIDTH * (drone.target[0] + 0.01),
+            HEIGHT * (drone.target[1]),
+            WIDTH * (drone.target[0]),
+            HEIGHT * (drone.target[1] + 0.01),
+        ],
+        outline="red",
+        fill="green",
+        width=2,
+        tags="target",
+    )
     canvas.pack()
 
 
-def window_loop(drone, window, canvas, delta):
+def window_loop(drone, window, canvas, delta, target_list, targets_hit=0):
 
     sleep(delta - 0.001)
 
@@ -210,19 +229,31 @@ def window_loop(drone, window, canvas, delta):
     update_drone(drone, canvas, delta)
 
     canvas.pack()
-    if drone.position[1] < 1:
-        window.after(1, window_loop, drone, window, canvas, delta)
+    if drone.alive:
+
+        if np.linalg.norm(drone.target - drone.position) < 0.01:
+            targets_hit += 1
+            drone.set_target(target_list[targets_hit])
+        window.after(
+            1, window_loop, drone, window, canvas, delta, target_list, targets_hit
+        )
+    else:
+        for tag in canvas.find_all():
+            canvas.delete(tag)
+            text = tk.Text(window, background="yellow", height=5, width=52)
+            text.insert(tk.END, "Game over")
+            text.pack()
 
 
-def run_window(drone=None):
+def run_window(drone, target_list=[(0.5, 0.5)]):
 
     window = construct_window()
     canvas = tk.Canvas(window, bg="black", height=HEIGHT, width=WIDTH)
-    if not drone:
-        drone = Drone()
+
+    drone.set_target(target_list[0])
     delta = 0.006
 
-    window.after(0, window_loop, drone, window, canvas, delta)
+    window.after(0, window_loop, drone, window, canvas, delta, target_list)
 
     window.mainloop()
 

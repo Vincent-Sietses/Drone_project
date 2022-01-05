@@ -5,11 +5,12 @@ from nn import Network
 
 
 class Drone:
-    def __init__(self, size=40):
+    def __init__(self, nn, size=40):
         self.size = size
         self.position = np.array([0.5, 0.5])
         self.velocity = np.array([0.0, 0.0])
         self.forces = np.array([0.0, 0.0])
+        self.alive = True
 
         self.torque = 0
         self.angle = 0
@@ -18,30 +19,36 @@ class Drone:
         # initialize thrusters
         self.br_thr = 0.4
         self.bl_thr = 0.4
-        # print(
-        #    rand(4, 10), rand(10,), rand(10, 10), rand(10,), rand(10, 2), rand(2,),
-        # )
-        self.nn = Network(
-            2 * rand(6, 10) - 1,
-            2 * rand(10,) - 1,
-            2 * rand(10, 10) - 1,
-            2 * rand(10,) - 1,
-            2 * rand(10, 2) - 1,
-            2 * rand(2,) - 1,
-        )
+
+        # give neural network
+        self.nn = nn
+
+        self.target = None
+
+    def set_target(self, tar):
+        self.target = tar
 
     def update(self, dt):
+        # print(self.velocity)
+        # print(self.position)
         self.update_thrusters()
         self.compute_forces()
 
-        self.br_thr += dt * 0.11
+        self.br_thr += dt * 0.1
         self.bl_thr += dt * 0.1
 
-        self.velocity += dt * (self.forces + np.array([0.0, 1]))  # forces + gravity
+        self.velocity += dt * (self.forces + np.array([0.0, 0.9]))  # forces + gravity
         self.position += self.velocity * dt
 
         self.angular_momentum += self.torque * dt
         self.angle += self.angular_momentum * dt
+
+        self.check_if_alive()
+
+    def check_if_alive(self):
+        if min(self.position) < 0 or max(self.position) > 1:
+            self.alive = False
+            # print(f"DEBUG : drone {self} died")
 
     def compute_forces(self):
         # compute linear force
@@ -59,6 +66,7 @@ class Drone:
         self.torque = bl_torque + br_torque
 
     def update_thrusters(self):
+
         self.br_thr, self.bl_thr = self.nn.forward_pass(
             np.array(
                 [
@@ -66,8 +74,11 @@ class Drone:
                     self.position[1],
                     self.velocity[0],
                     self.velocity[1],
+                    self.target[0] - self.position[0],
+                    self.target[1] - self.position[1],
                     self.angle,
                     self.angular_momentum,
                 ]
             )
         )
+        # print(f"thrusters updated to {self.br_thr, self.bl_thr}")
