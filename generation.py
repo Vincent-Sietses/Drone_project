@@ -1,7 +1,7 @@
 import pickle
 import numpy as np
 from numpy.random import normal
-from random import random
+from random import random, sample
 from nn import Network
 from os import path, remove
 
@@ -14,11 +14,12 @@ class Generation:
         self.gen_num = gen_num
         self.population = []
         self.nn_list = []
+        self.graded_NNs = None
 
     @classmethod
-    def first_generation(cls, architecture, mean=0, std=0.5):
+    def first_generation(cls, architecture, mean=0.1, std=0.4):
         first_gen = cls(architecture, gen_num=1)
-        for _ in range(100):
+        for _ in range(200):
             gene = []
             for i in range(1, len(architecture)):
                 gene += list(
@@ -29,11 +30,11 @@ class Generation:
             first_gen.population.append(gene)
         return first_gen
 
-    def construct_generation(self, parents, cross_over_r, mutation_r, mutation_std):
-        for _ in range(50):
-            offspring_1, offspring_2 = self.crossover(
-                *random.sample(set(parents), 2), crossover_r
-            )
+    def construct_generation(
+        self, parents, cross_over_r=0.02, mutation_r=0.02, mutation_std=0.3
+    ):
+        for _ in range(100):
+            offspring_1, offspring_2 = self.crossover(*sample(parents, 2), cross_over_r)
             self.population.append(self.mutate(offspring_1, mutation_r, mutation_std))
             self.population.append(self.mutate(offspring_2, mutation_r, mutation_std))
 
@@ -41,7 +42,9 @@ class Generation:
         """ basic mutation mechanism"""
         for i in range(len(offspring)):
             if random() < mutation_r:
+
                 offspring[i] += mutation_std * normal(0, 1)
+        return offspring
 
     def crossover(self, parent_1, parent_2, crossover_r):
         """
@@ -68,8 +71,9 @@ class Generation:
         if self.nn_list != []:
             return self.nn_list
         nn_list = []
+        # print(f"DEBUG: population \n {self.population}")
+        for count, gene in enumerate(self.population):
 
-        for gene in self.population:
             weights = []
             biases = []
             pointer_1, pointer_2 = 0, 0
@@ -86,13 +90,15 @@ class Generation:
                 biases.append(np.array(gene[pointer_1:pointer_2]))
                 pointer_1 = pointer_2
 
-            nn_list.append(Network(self.architecture, weights, biases))
+            nn_list.append((Network(self.architecture, weights, biases), count))
+        # print(nn_list)
         self.nn_list = nn_list
         return nn_list
 
     def save_generation(self):
         file_path = path.relpath(f"data/gen{self.gen_num}.pickle")
-        remove(file_path)
+        if path.isfile(file_path):
+            remove(file_path)
         try:
             with open(file_path, "wb") as f:
                 pickle.dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)

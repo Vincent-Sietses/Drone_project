@@ -1,14 +1,17 @@
 from window import run_window
 from drone import Drone
-from objective_function import test_generation
+from objective_function import new_generation, test_generation
 from generation import Generation
 
 if __name__ == "__main__":
-    gen = Generation.first_generation([8, 12, 12, 2])
-    # gen = Generation.load_generation(1)
+    # gen = Generation.first_generation([7, 14, 14, 4])
+    # n = gen.construct_NNs()
+    gen = Generation.load_generation(350)
 
     target_list = [
+        (0.3, 0.3,),
         (0.3, 0.4),
+        (0.4, 0.3),
         (0.5, 0.8),
         (0.8, 0.4),
         (0.7, 0.1),
@@ -18,12 +21,17 @@ if __name__ == "__main__":
         (0.5, 0.5),
     ]
 
-    best = test_generation(gen, target_list)
-    print(best)
+    for _ in range(349):
+        next_gen = new_generation(gen, target_list)
+        gen.save_generation()
+        gen = next_gen
 
-    drone = Drone(best[0][0])
+    best = test_generation(gen, target_list)
 
     gen.save_generation()
-    # drone = Drone(gen.construct_NNs()[0])
+
+    print(best)
+    drone = Drone(best[0][0])
+
     run_window(drone=drone, target_list=target_list)
 

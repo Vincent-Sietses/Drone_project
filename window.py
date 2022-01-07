@@ -111,13 +111,45 @@ def draw_drone(drone, canvas) -> None:
         width=2,
         tags="drone",
     )
+    canvas.create_polygon(  # top right thruster
+        [
+            pos_x + 0.85 * size,
+            pos_y - 1.1 * size,
+            pos_x + 1.0 * size,
+            pos_y - 1.4 * size,
+            pos_x + 1.5 * size,
+            pos_y - 0.7 * size,
+            pos_x + 1.2 * size,
+            pos_y - 0.50 * size,
+        ],
+        outline="black",
+        fill="grey",
+        width=2,
+        tags="drone",
+    )
+    canvas.create_polygon(  # top left thruster
+        [
+            pos_x - 1.0 * size,
+            pos_y - 1.4 * size,
+            pos_x - 0.85 * size,
+            pos_y - 1.1 * size,
+            pos_x - 1.2 * size,
+            pos_y - 0.50 * size,
+            pos_x - 1.5 * size,
+            pos_y - 0.7 * size,
+        ],
+        outline="black",
+        fill="grey",
+        width=2,
+        tags="drone",
+    )
 
 
 def update_drone(drone: Drone, canvas: tk.Canvas, delta: float):
 
     ## Auxiliary function to allow circle drawing on the canvas
-    def _create_circle(self, x, y, r, **kwargs):
-        return self.create_oval(x - r, y - r, x + r, y + r, **kwargs)
+    def _create_circle(canv, x, y, r, **kwargs):
+        return canv.create_oval(x - r, y - r, x + r, y + r, **kwargs)
 
     tk.Canvas.create_circle = _create_circle
     # delete previous thruster effects
@@ -128,6 +160,7 @@ def update_drone(drone: Drone, canvas: tk.Canvas, delta: float):
 
     pos_x, pos_y = WIDTH * drone.position[0], HEIGHT * drone.position[1]
     size = drone.size
+
     if drone.br_thr:
         canvas.create_polygon(  # bottom right thruster
             [
@@ -173,6 +206,58 @@ def update_drone(drone: Drone, canvas: tk.Canvas, delta: float):
             canvas.create_circle(
                 pos_x - (0.4 + 0.4 * random()) * size,
                 pos_y + (1.3 + 0.6 * random() * drone.bl_thr) * size,
+                2,
+                tag="flame",
+                fill="red",
+                outline="orange",
+                width=1,
+            )
+
+    if drone.tl_thr:
+        canvas.create_polygon(  # top left thruster
+            [
+                pos_x - 1.25 * size,
+                pos_y - 0.7 * size,
+                pos_x - (1.35 + 0.3 * drone.tl_thr) * size,
+                pos_y - (0.6 - 0.3 * drone.tl_thr) * size,
+                pos_x - (1.25 + 0.3 * drone.tl_thr) * size,
+                pos_y - (0.45 - 0.3 * drone.tl_thr) * size,
+            ],
+            outline="red",
+            fill="yellow",
+            width=3,
+            tags="flame",
+        )
+        for _ in range(ceil(5 * drone.tl_thr)):
+            canvas.create_circle(
+                pos_x - (1.2 + 0.5 * random()) * size,
+                pos_y - (0.5 - 0.5 * random() * drone.tl_thr) * size,
+                2,
+                tag="flame",
+                fill="red",
+                outline="orange",
+                width=1,
+            )
+
+    if drone.tr_thr:
+        canvas.create_polygon(  # top right thruster
+            [
+                pos_x + 1.25 * size,
+                pos_y - 0.7 * size,
+                pos_x + (1.25 + 0.3 * drone.tr_thr) * size,
+                pos_y - (0.45 - 0.3 * drone.tr_thr) * size,
+                pos_x + (1.35 + 0.3 * drone.tr_thr) * size,
+                pos_y - (0.6 - 0.3 * drone.tr_thr) * size,
+            ],
+            outline="red",
+            fill="yellow",
+            width=3,
+            tags="flame",
+        )
+        for _ in range(ceil(5 * drone.tr_thr)):
+            canvas.create_circle(
+                pos_x + (1.2 + 0.5 * random()) * size,
+                pos_y - (0.5 - 0.5 * random() * drone.tr_thr) * size,
                 2,
                 tag="flame",
                 fill="red",
